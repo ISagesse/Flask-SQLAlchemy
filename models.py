@@ -10,10 +10,23 @@ class User(db.Model):
 
     orders = db.relationship('Order', backref='user', lazy=True)
 
+order_table = db.Table('order_product', 
+    db.Column('order_id', db.Integer, db.ForeignKey('order.id'), primary_key=True),
+    db.Column('product_id', db.Integer, db.ForeignKey('product.id'), primary_key=True)
+)
+
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     total = db.Column(db.Integer)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    #many to many reletionship with product class
+    products = db.relationship('Product', secondary=order_table, lazy=True, backref=db.backref('order', lazy=True))
+
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+
 
 def insert_data():
     from datetime import datetime
@@ -63,3 +76,39 @@ def query_table():
     print('Third User')
     for order in third_user.orders:
         print(f'Order ID: { order.id} Total: {order.total}')
+
+def add_products():
+    product1 = Product(name='Product One')
+    product2 = Product(name='Product Two')
+    product3 = Product(name='Product Three')
+
+    db.session.add_all([product1, product2, product3])
+
+    order_1 = Order.query.filter_by(id=1).first()
+    order_1.products.append(product1)
+    order_1.products.append(product2)
+
+    order2 = Order.query.filter_by(id=2).first()
+    order2.products.append(product3)
+
+    db.session.commit()
+
+def query_order_products():
+    order1 = Order.query.filter_by(id=1).first()
+    order2 = Order.query.filter_by(id=2).first()
+
+    print('First Order Products')
+    for product in order1.products:
+        print(f'Product Name: {product.name} ')
+
+    print('Second Order Products')
+    for product in order2.products:
+        print(f' Product Name: {product.name} ')
+
+def get_all_users():
+    users = User.query.all()
+    for user in users:
+        print(f' User Name: {user.name} ')
+
+    user_count = User.query.count()
+    print(f'User count: {user_count} ')
